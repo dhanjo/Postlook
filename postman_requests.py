@@ -54,13 +54,12 @@ def postman_requests(query):
             'method': method
         })
 
-    # Printing the extracted information
+    # Appending the extracted information to the output
     for result in results:
-        print("URL:", result['url'])
-        print("ID:", result['id'])
-        print("Collection Name:", result['collection_name'])
-        print("Publisher Name:", result['publisher_name'])
-        print("Method:", result['method'])
-        print()
+        output += "URL: " + result['url'] + "\n"
+        output += "ID: " + result['id'] + "\n"
+        output += "Collection Name: " + result['collection_name'] + "\n"
+        output += "Publisher Name: " + result['publisher_name'] + "\n"
+        output += "Method: " + result['method'] + "\n\n"
 
     return output
