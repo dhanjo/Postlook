@@ -1,5 +1,5 @@
-import requests
 import json
+import requests
 
 def postman_requests(query):
     url = 'https://www.postman.com/_api/ws/proxy'
@@ -14,7 +14,7 @@ def postman_requests(query):
         'Content-Length': '326',
         'Connection': 'close'
     }
-    Data = {
+    data = {
         "service": "search",
         "method": "POST",
         "path": "/search-all",
@@ -33,20 +33,19 @@ def postman_requests(query):
         }
     }
 
-    response = requests.post(url, json=Data, headers=headers)
+    response = requests.post(url, json=data, headers=headers)
     output = ""
 
-    data = json.loads(response.text)
+    data_dict = json.loads(response.text)
 
-    # Extracting information from each document
     results = []
-    for item in data['data']:
+    for item in data_dict['data']:
         doc = item['document']
         url = doc['url']
         id = doc['id']
         collection_name = doc['collection']['name']
         publisher_name = doc['publisherName']
-        method = doc['method']
+        method = doc.get('method', '')  # Use get() method with a default value to handle missing 'method' key
         results.append({
             'url': url,
             'id': id,
@@ -55,13 +54,13 @@ def postman_requests(query):
             'method': method
         })
 
-    # Generating the output string
+    # Printing the extracted information
     for result in results:
-        output += "URL: " + result['url'] + "\n"
-        output += "ID: " + result['id'] + "\n"
-        output += "Collection Name: " + result['collection_name'] + "\n"
-        output += "Publisher Name: " + result['publisher_name'] + "\n"
-        output += "Method: " + result['method'] + "\n"
-        output += "\n"
+        print("URL:", result['url'])
+        print("ID:", result['id'])
+        print("Collection Name:", result['collection_name'])
+        print("Publisher Name:", result['publisher_name'])
+        print("Method:", result['method'])
+        print()
 
     return output
