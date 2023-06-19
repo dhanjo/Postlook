@@ -1,6 +1,6 @@
 # Postlook
 
-![image](https://github.com/dhanjo/Postlook/assets/24205535/6bce694d-db12-4436-80a8-2b1ff9017f1d)
+![Postlook](https://github.com/dhanjo/Postlook/assets/24205535/fca49a0d-7ee5-480c-b647-67ded86f0dda)
 
 The Postlook Scanner is a powerful tool designed to scan the Postman website and identify publicly exposed critical company information. It leverages techniques to search for sensitive data that may have been unintentionally made public on the Postman platform.
 # Features of Postlook:
@@ -19,9 +19,8 @@ The Postlook tool is written in Python and scans the Postman website for finding
 
 `python postlook.py [-h] [-q <Organization Name>] [-o <Output File Name>]`
 
-# Demo
 
-![Postlook](https://github.com/dhanjo/Postlook/assets/24205535/fca49a0d-7ee5-480c-b647-67ded86f0dda)
+
 
 
 
