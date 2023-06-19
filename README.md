@@ -17,4 +17,14 @@ The Postlook tool is written in Python and scans the Postman website for finding
 
 `python postlook.py [-h] [-q <Organization Name>] [-o <Output File Name>]`
 
+# Demo
+
+
+
+
+https://github.com/dhanjo/Postlook/assets/24205535/07a573fd-ab91-4c48-ba55-a064949a250c
+
+
+
+
 
