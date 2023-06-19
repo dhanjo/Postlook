@@ -42,26 +42,25 @@ def postman_teams(query):
     results = []
     for item in data_dict['data']:
         doc = item['document']
-        id = doc['id']
+        id = str(doc['id'])
         name = doc['name']
-        desc = doc['description']
-        users = ', '.join(doc['users'])  # Convert list to comma-separated string
+        desc = doc['description'] or ''
+        users = ', '.join(doc['users'])
         created = doc['createdat']
         results.append({
-            'name': name,
             'id': id,
+            'name': name,
             'description': desc,
             'users': users,
             'created': created
         })
 
-    # Generating the output string
+    # Printing the extracted information
     for result in results:
-        output += "ID: " + str(result['id']) + "\n"
-        output += "NAME: " + result['name'] + "\n"
+        output += "ID: " + result['id'] + "\n"
+        output += "Name: " + result['name'] + "\n"
         output += "Description: " + result['description'] + "\n"
         output += "Users: " + result['users'] + "\n"
-        output += "Created: " + result['created'] + "\n"
-        output += "\n"
+        output += "Created: " + result['created'] + "\n\n"
 
     return output
