@@ -17,6 +17,10 @@ output_file = args.output
 if not query and not output_file:
     parser.print_help()
     exit()
+    
+if output_file and not query:
+    parser.print_help()
+    exit()
 
 postman_art = '''
     ____             __  __            __  
