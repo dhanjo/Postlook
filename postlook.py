@@ -95,5 +95,5 @@ if output_file:
 
     output += Fore.YELLOW + "  " + "─" * 50 + Style.RESET_ALL + "\n"
 
-    with open(output_file, 'w') as file:
+    with open(output_file, 'w', encoding="utf-8") as file:
         file.write(output)
