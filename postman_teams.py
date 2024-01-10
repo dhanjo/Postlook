@@ -46,13 +46,13 @@ def postman_teams(query):
         name = doc['name']
         desc = doc['description'] or ''
         users = ', '.join(doc['users'])
-        created = doc['createdat']
+      # created = doc['createdat']
         results.append({
             'id': id,
             'name': name,
             'description': desc,
             'users': users,
-            'created': created
+        #    'created': created
         })
 
     # Printing the extracted information
@@ -61,6 +61,6 @@ def postman_teams(query):
         output += "Name: " + result['name'] + "\n"
         output += "Description: " + result['description'] + "\n"
         output += "Users: " + result['users'] + "\n"
-        output += "Created: " + result['created'] + "\n\n"
+        #output += "Created: " + result['created'] + "\n\n"
 
     return output
