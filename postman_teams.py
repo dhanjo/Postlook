@@ -36,23 +36,22 @@ def postman_teams(query):
     output = ""
 
     response = requests.post(url, json=Data, headers=headers)
-
     data_dict = json.loads(response.text)
 
     results = []
-    for item in data_dict['data']:
-        doc = item['document']
-        id = str(doc['id'])
-        name = doc['name']
-        desc = doc['description'] or ''
-        users = ', '.join(doc['users'])
-      # created = doc['createdat']
+    for item in data_dict.get('data', []):
+        doc = item.get('document', {})
+        id = str(doc.get('id', 'N/A'))
+        name = doc.get('name', 'N/A')
+        desc = doc.get('description', '')
+        users = ', '.join(doc.get('users', []))
+        created = doc.get('createdat', 'N/A')  # Use 'N/A' if 'createdat' is not found
         results.append({
             'id': id,
             'name': name,
             'description': desc,
             'users': users,
-        #    'created': created
+            'created': created
         })
 
     # Printing the extracted information
@@ -61,6 +60,6 @@ def postman_teams(query):
         output += "Name: " + result['name'] + "\n"
         output += "Description: " + result['description'] + "\n"
         output += "Users: " + result['users'] + "\n"
-        #output += "Created: " + result['created'] + "\n\n"
+        output += "Created: " + result['created'] + "\n\n"
 
     return output
