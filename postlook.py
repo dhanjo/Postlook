@@ -84,38 +84,26 @@ def filter_exact_domain(text: str, domain: str) -> str:
     return "\n\n".join(kept)
 
 
-def run_whispers(text: str, cfg: str):
-    """Run Whispers scan on provided text with given config path"""
-    print(f"[*] Running Whispers with config: {cfg}")
-    if not whispers:
-        print("[-] Whispers not installed. pip install whispers")
-        return
-    if not os.path.isfile(cfg):
-        print(f"[-] Whispers config missing at {cfg}")
-        return
-    if not text.strip():
-        print("[*] Nothing to scan")
-        return
-
+def scan_secrets_inline(text: str, cfg: str):
+    """Scan a block of text for secrets and return list of 'key=value' strings"""
+    if not whispers or not os.path.isfile(cfg) or not text.strip():
+        return []
     with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".txt") as tmp:
         tmp.write(text)
         path = tmp.name
-
     try:
         args = f"-c {cfg} {path}"
         findings = list(whispers.secrets(args))
-        if findings:
-            seen = set()
-            print("\n[+] Potential secrets:")
-            for s in findings:
-                line = f"{s.key} = {s.value}"
-                if line not in seen:
-                    print(" >", line)
-                    seen.add(line)
-        else:
-            print("[*] No secrets found")
-    except Exception as e:
-        print("[-] Whispers error:", e)
+        secrets = []
+        seen = set()
+        for s in findings:
+            line = f"{s.key}:{s.value}"
+            if line not in seen:
+                secrets.append(line)
+                seen.add(line)
+        return secrets
+    except Exception:
+        return []
     finally:
         os.unlink(path)
 
@@ -124,10 +112,12 @@ def process_query(query: str, args):
     domain = normalize_domain(query)
     print(f"\n=== Results for: {domain} ===")
 
+    # Fetch raw data
     col_raw = postman_collections(query)
     team_raw = postman_teams(query)
     req_raw = postman_requests(query)
 
+    # Determine filtered outputs
     if args.strict:
         if args.no_subdomains:
             col_out = filter_exact_domain(col_raw, domain)
@@ -140,29 +130,36 @@ def process_query(query: str, args):
     else:
         col_out, team_out, req_out = col_raw, team_raw, req_raw
 
+    # Prepare Whisper config path
+    cfg = None
+    if args.whispers_config:
+        cfg = args.whispers_config
+    elif args.whispers:
+        cfg = 'config.yml'
+
+    # Print sections
     print("\n" + POSTMAN_ART + "\n")
     print(POSTMAN_MONITORING)
     print(TWITTER + "\n")
+
+    # Collections
     print("[+] Publicly Exposed - Workspaces and Collections\n")
     print(col_out)
+
+    # Teams
     print("\n[+] Publicly Exposed - Teams\n")
     print(team_out)
+
+    # API Requests with inline secrets
     print("\n[+] Publicly Exposed - API Requests\n")
-    print(req_out)
-
-    run_whispers_flag = False
-    cfg = None
-    if args.whispers_config:
-        run_whispers_flag = True
-        cfg = args.whispers_config
-    elif args.whispers:
-        run_whispers_flag = True
-        cfg = 'config.yml'
-
-    if run_whispers_flag:
-        to_scan = ("\n".join([col_out, team_out, req_out]) if args.strict else "\n".join([col_raw, team_raw, req_raw]))
-        print("\n[*] Whispers scanning...")
-        run_whispers(to_scan, cfg)
+    for block in split_blocks(req_out):
+        print(block)
+        # Inline secret detection
+        if cfg:
+            secrets = scan_secrets_inline(block, cfg)
+            for sec in secrets:
+                print(f"Potential Secret: {sec}")
+        print()
 
     print("\n" + "─" * 50 + "\n")
 
