@@ -158,7 +158,7 @@ def process_query(query: str, args):
         if cfg:
             secrets = scan_secrets_inline(block, cfg)
             for sec in secrets:
-                print(f"Potential Secret: {sec}")
+                print(f"[+++] Secret Detected: {sec}")
         print()
 
     print("\n" + "─" * 50 + "\n")
