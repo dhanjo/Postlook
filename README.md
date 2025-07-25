@@ -49,7 +49,7 @@ python postlook.py -q <domain_or_keyword> [options]
 ### Required
 
 * `-q, --query <value>`
-  Keyword or domain to search for (e.g. `nykaa.com`).
+  Keyword or domain to search for (e.g. `google.com`).
 
 ### Optional
 
