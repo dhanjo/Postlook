@@ -1,34 +1,111 @@
 # Postlook
 
-![Postlook](https://github.com/dhanjo/Postlook/assets/24205535/fca49a0d-7ee5-480c-b647-67ded86f0dda)
+Postlook is a Python-based scanner that crawls Postman’s public workspace, collection, team and request endpoints to surface potentially sensitive or misconfigured data.
 
-The Postlook Scanner is a powerful tool designed to scan the Postman website and identify publicly exposed critical company information. It leverages techniques to search for sensitive data that may have been unintentionally made public on the Postman platform.
-# Features of Postlook:
-1. Automated Scanning: The tool performs automated scans of the Postman site, systematically examining various endpoints, APIs, and public collections to discover potentially sensitive information.
-2. Notification and Reporting: Upon completion of the scan, the tool generates a comprehensive report that highlights any publicly exposed critical company information found.
-3. User-Friendly Interface: The tool offers an intuitive and user-friendly interface, making it accessible to security professionals, developers, and other stakeholders. The scan results are presented in a structured and easy-to-understand format, enabling efficient analysis and remediation.
- 
-# Working of Postlook
-The Postlook tool is written in Python and scans the Postman website for finding publicly available data related to the keyword.
+## Features
 
-# Installation
+* **Automated scanning** of workspaces, teams, and API requests on Postman’s public platform.
+* **Domain filtering (**\`\`**)**: restricts output to only those blocks containing your exact query string.
+* **Secret detection (**\`\`**)**: integrates with [Whispers](https://github.com/adeptex/whispers) to flag potential secrets in the results.
+* **Custom Whisper rules (**\`\`**)**: point to your own `config.yml` to drive the Whisper scan.
+* **Output redirection (**\`\`**)**: save filtered results to a file for offline analysis.
 
-`pip install -r requirment.txt`
+## How It Works
 
-# Usage 
+1. **Fetch**: queries Postman’s internal search API for your keyword or domain.
+2. **Filter**: if `--strict` is enabled, drops any result block that doesn’t contain the exact substring you provided.
+3. **Detect secrets**: optionally runs Whispers over either the raw or filtered output.
+4. **Display**: prints workspaces, teams, and requests in a human‑readable format.
 
-`python postlook.py [-h] [-q <Organization Name>] [-o <Output File Name>]`
+## Installation
 
+1. Clone the repository:
 
+   ```bash
+   git clone https://github.com/dhanjo/Postlook.git
+   cd Postlook
+   ```
+2. Install dependencies:
 
+   ```bash
+   pip install -r requirements.txt
+   ```
 
+### Requirements file
 
+```text
+requests
+whispers
+```
 
+(Whispers is optional unless you intend to scan for secrets.)
 
+## Usage
 
+```bash
+python postlook.py -q <domain_or_keyword> [options]
+```
 
+### Required
 
+* `-q, --query <value>`
+  Keyword or domain to search for (e.g. `nykaa.com`).
 
+### Optional
 
+* `-o, --output <file>`
+  Write filtered results into the given file.
 
+* `--strict`
+  Only keep blocks that contain the exact query substring.
 
+* `--whispers`
+  Run Whispers secret detection using the default `config.yml` in the current directory.
+
+* `--whispers-config <path>`
+  Run Whispers with a custom ruleset (implies running Whisper scan even without `--whispers`).
+
+## Examples
+
+* **Basic scan** (no filtering):
+
+  ```bash
+  python postlook.py -q example.com
+  ```
+
+* **Strict domain filter**:
+
+  ```bash
+  python postlook.py -q example.com --strict
+  ```
+
+* **Default Whispers scan**:
+
+  ```bash
+  python postlook.py -q example.com --whispers
+  ```
+
+* **Custom Whisper rules**:
+
+  ```bash
+  python postlook.py -q example.com --whispers-config /path/to/config.yml
+  ```
+
+* **Combined strict + secret detection**:
+
+  ```bash
+  python postlook.py -q example.com --strict --whispers
+  ```
+
+* **Save output to file**:
+
+  ```bash
+  python postlook.py -q example.com -o results.txt
+  ```
+
+## License
+
+MIT © Dhanjo
+
+```
+```
