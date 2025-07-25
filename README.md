@@ -5,10 +5,10 @@ Postlook is a Python-based scanner that crawls Postman’s public workspace, col
 ## Features
 
 * **Automated scanning** of workspaces, teams, and API requests on Postman’s public platform.
-* **Domain filtering***: restricts output to only those blocks containing your exact query string.
-* **Secret detection***: integrates with [Whispers](https://github.com/adeptex/whispers) to flag potential secrets in the results.
-* **Custom Whisper rules***: point to your own `config.yml` to drive the Whisper scan.
-* **Output redirection***: save filtered results to a file for offline analysis.
+* **Domain filtering**: restricts output to only those blocks containing your exact query string.
+* **Secret detection**: integrates with [Whispers](https://github.com/adeptex/whispers) to flag potential secrets in the results.
+* **Custom Whisper rules**: point to your own `config.yml` to drive the Whisper scan.
+* **Output redirection**: save filtered results to a file for offline analysis.
 
 ## How It Works
 
