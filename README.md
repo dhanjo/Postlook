@@ -116,4 +116,4 @@ python postlook.py -q <domain_or_keyword> [-q <another>] [--keyword-file <file>]
 
 ## License
 
-MIT © Dhananjay Garg
+MIT
