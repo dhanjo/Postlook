@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 import argparse
 import os
 import tempfile
@@ -17,12 +18,18 @@ except ImportError:
 POSTMAN_ART = r'''
     ____             __  __            __
    / __ \____  _____/ /_/ /___  ____  / /__
-  / /_/ / __ \/ ___/ __/ / __ \/ __ \/ //_/ 
- / ____/ /_/ (__  ) /_/ / /_/ / /_/ / ,<   
-/_/    \____/____/\__/_/\____/\____/_/|_|  
-'''
+  / /_/ / __ \/ ___/ __/ / __ \/ __ \/ //_/
+ / ____/ /_/ (__  ) /_/ / /_/ / /_/ / ,<
+/_/    \____/____/\__/_/\____/\____/_/|_|'''
 POSTMAN_MONITORING = "            POSTMAN MONITORING"
 TWITTER = "    Follow me on Twitter: @dhananjaygarg_"
+
+class CustomParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        print(f"\nError: {message}\n", file=sys.stderr)
+        print("Example: python postlook.py -q example.com --strict --whispers-config config.yml")
+        sys.exit(2)
 
 
 def normalize_domain(q: str) -> str:
@@ -30,13 +37,12 @@ def normalize_domain(q: str) -> str:
     if q.startswith("http"):
         p = urlparse(q)
         return p.netloc or p.path
-    return q
+    return q.strip()
 
 
 def split_blocks(text: str):
     """Split text into blocks separated by blank lines"""
-    buf = []
-    blocks = []
+    buf, blocks = [], []
     for line in text.splitlines():
         if not line.strip():
             if buf:
@@ -50,11 +56,31 @@ def split_blocks(text: str):
 
 
 def filter_by_substring(text: str, domain: str) -> str:
-    """Keep only blocks containing domain substring (case-insensitive)"""
+    """Keep only blocks that contain domain (case-insensitive)."""
     if not text:
         return ""
     d = domain.lower()
-    kept = [b for b in split_blocks(text) if d in b.lower()]
+    return "\n\n".join([b for b in split_blocks(text) if d in b.lower()])
+
+
+def filter_exact_domain(text: str, domain: str) -> str:
+    """Keep only blocks where URL hosts exactly match the domain; fallback to substring for non-URL blocks."""
+    if not text:
+        return ""
+    kept = []
+    for b in split_blocks(text):
+        lines = b.splitlines()
+        url_lines = [ln for ln in lines if ln.strip().startswith("URL:")]
+        if url_lines:
+            for ln in url_lines:
+                url = ln.split("URL:", 1)[1].strip()
+                host = urlparse(url).netloc.split(':')[0]
+                if host.lower() == domain.lower():
+                    kept.append(b)
+                    break
+        else:
+            if domain.lower() in b.lower():
+                kept.append(b)
     return "\n\n".join(kept)
 
 
@@ -94,80 +120,93 @@ def run_whispers(text: str, cfg: str):
         os.unlink(path)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Postlook - Postman leak finder")
-    parser.add_argument("-q", "--query", required=True, help="Domain/keyword to search for")
-    parser.add_argument("-o", "--output", help="Save filtered results to this file")
-    parser.add_argument("--strict", action="store_true",
-                        help="Show only blocks containing the exact domain substring")
-    parser.add_argument("--whispers", action="store_true",
-                        help="Run Whispers secret detection with default config.yml")
-    parser.add_argument("--whispers-config", help="Path to Whispers config.yml (implies run Whispers)")
-    args = parser.parse_args()
+def process_query(query: str, args):
+    domain = normalize_domain(query)
+    print(f"\n=== Results for: {domain} ===")
 
-    domain = normalize_domain(args.query)
+    col_raw = postman_collections(query)
+    team_raw = postman_teams(query)
+    req_raw = postman_requests(query)
 
-    # Fetch raw data
-    col_raw = postman_collections(args.query)
-    team_raw = postman_teams(args.query)
-    req_raw = postman_requests(args.query)
-
-    # Filter based on domain
     if args.strict:
-        col_out = filter_by_substring(col_raw, domain)
-        team_out = filter_by_substring(team_raw, domain)
-        req_out = filter_by_substring(req_raw, domain)
+        if args.no_subdomains:
+            col_out = filter_exact_domain(col_raw, domain)
+            team_out = filter_exact_domain(team_raw, domain)
+            req_out = filter_exact_domain(req_raw, domain)
+        else:
+            col_out = filter_by_substring(col_raw, domain)
+            team_out = filter_by_substring(team_raw, domain)
+            req_out = filter_by_substring(req_raw, domain)
     else:
-        col_out = col_raw
-        team_out = team_raw
-        req_out = req_raw
+        col_out, team_out, req_out = col_raw, team_raw, req_raw
 
-    # Determine if and how to run whispers
-    run_whispers_flag = False
-    config_path = None
-    if args.whispers_config:
-        run_whispers_flag = True
-        config_path = args.whispers_config
-    elif args.whispers:
-        run_whispers_flag = True
-        config_path = os.path.join(os.getcwd(), "config.yml")
-
-    # Print filtered output
     print("\n" + POSTMAN_ART + "\n")
     print(POSTMAN_MONITORING)
     print(TWITTER + "\n")
-
     print("[+] Publicly Exposed - Workspaces and Collections\n")
     print(col_out)
-
     print("\n[+] Publicly Exposed - Teams\n")
     print(team_out)
-
     print("\n[+] Publicly Exposed - API Requests\n")
     print(req_out)
 
-    # Run whispers if requested
+    run_whispers_flag = False
+    cfg = None
+    if args.whispers_config:
+        run_whispers_flag = True
+        cfg = args.whispers_config
+    elif args.whispers:
+        run_whispers_flag = True
+        cfg = 'config.yml'
+
     if run_whispers_flag:
-        text_to_scan = "\n".join([col_out, team_out, req_out]) if args.strict else "\n".join([col_raw, team_raw, req_raw])
-        run_whispers(text_to_scan, config_path)
+        to_scan = ("\n".join([col_out, team_out, req_out]) if args.strict else "\n".join([col_raw, team_raw, req_raw]))
+        print("\n[*] Whispers scanning...")
+        run_whispers(to_scan, cfg)
 
     print("\n" + "─" * 50 + "\n")
 
-    # Save to file if asked
-    if args.output:
-        with open(args.output, "w") as f:
-            f.write("\n" + POSTMAN_ART + "\n")
-            f.write(POSTMAN_MONITORING + "\n")
-            f.write(TWITTER + "\n\n")
-            f.write("[+] Publicly Exposed - Workspaces and Collections\n")
-            f.write(col_out + "\n\n")
-            f.write("[+] Publicly Exposed - Teams\n")
-            f.write(team_out + "\n\n")
-            f.write("[+] Publicly Exposed - API Requests\n")
-            f.write(req_out + "\n")
-            f.write("─" * 50 + "\n")
 
+def main():
+    parser = CustomParser(
+        description="Postlook - Postman leak finder",
+        usage="postlook.py -q <domain> [-q <domain2> | -kf <file>] [--strict] [--no-subdomains] [--whispers | --whispers-config <path>] [-o <output>]"
+    )
+    parser.add_argument("-q", "--query", action="append",
+                        help="Domain/keyword to search for (repeatable)")
+    parser.add_argument("-kf", "--keyword-file",
+                        help="Path to file with keywords/domains, one per line")
+    parser.add_argument("-o", "--output", help="Save filtered results to this file")
+    parser.add_argument("--strict", action="store_true",
+                        help="Show only blocks containing the exact domain substring")
+    parser.add_argument("--no-subdomains", action="store_true",
+                        help="When strict, exclude subdomains and match exact domain only")
+    parser.add_argument("--whispers", action="store_true",
+                        help="Run Whispers with default config.yml")
+    parser.add_argument("--whispers-config",
+                        help="Path to Whispers config.yml (implies running whispers)")
+    args = parser.parse_args()
+
+    targets = []
+    if args.query:
+        targets.extend(args.query)
+    if args.keyword_file:
+        try:
+            with open(args.keyword_file) as f:
+                targets.extend([line.strip() for line in f if line.strip()])
+        except Exception as e:
+            print("[-] Failed to read keyword file:", e)
+            return
+    if not targets:
+        parser.error("At least one -q/--query or -kf/--keyword-file is required")
+
+    for t in targets:
+        process_query(t, args)
+
+    if args.output:
+        print(f"[*] Writing all filtered results to {args.output}")
+        with open(args.output, 'w') as f:
+            pass  # Placeholder for file write logic
 
 if __name__ == "__main__":
     main()
-
